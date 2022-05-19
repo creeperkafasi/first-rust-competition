@@ -15,11 +15,9 @@ use std::fmt;
 use std::io::prelude::*;
 use std::path::Path;
 use std::time::Duration;
-use subprocess;
 use subprocess::ExitStatus;
-use tempfile;
 
-pub fn deploy_command(matches: &ArgMatches, config: &FrcConfig) -> Result<(), String> {
+pub fn deploy_command(matches: &ArgMatches<'_>, config: &FrcConfig) -> Result<(), String> {
     cargo_build(matches, config)?;
 
     let addresses = if let Some(addr) = config.rio_address_override.clone() {
@@ -57,6 +55,13 @@ fn make_addresses(team_number: u64) -> Vec<String> {
         format!("roborio-{}-FRC.local", team_number),
         format!("10.{}.{}.2", team_number / 100, team_number % 100),
         "172.22.11.2".to_string(),
+
+        // The following are addresses that exist in uncommon development environments
+        // Some teams run a shop wifi network that acts as a practice field. 
+        // This setup involves the following DNS entries
+        format!("roborio-{}-FRC", team_number),
+        format!("roborio-{}-FRC.lan", team_number),
+        format!("roborio-{}-FRC.frc-field.local", team_number),
     ]
 }
 
@@ -181,7 +186,7 @@ fn ssh<T: AsRef<OsStr>>(target_address: &T, command: &str) -> Result<(), String>
 
 const DEPLOY_TARGET_TRIPLE: &str = "arm-unknown-linux-gnueabi";
 
-fn cargo_build(matches: &ArgMatches, config: &FrcConfig) -> Result<(), String> {
+fn cargo_build(matches: &ArgMatches<'_>, config: &FrcConfig) -> Result<(), String> {
     info!("Building the project...");
     let mut args = vec![
         "build",
